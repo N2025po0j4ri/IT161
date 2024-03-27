@@ -1,0 +1,462 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
+/**
+ * @author   TLG
+ * Class: 	 Java
+ * Abstract: Paystub
+ * 			 Paystub calculates the Gross Earnings, FICA tax 
+ * 			 (Medicare and Social Security taxes), Federal Tax 
+ * 			 Withheld, and Net Amount of the payroll check 
+ * 			 for each employee of a company.
+ * @version 1.0 
+ */
+public class Paystub {
+
+	/**
+	 * Paystub main
+	 * @param args
+	 * args not used
+	 */
+	public static void main(String[] args) {
+		// Declare variables
+		String strResponse = "";
+		String strName = "";
+		double dblHourlyWage = 0;
+		double dblHoursWorked = 0;
+		int intExemptions = 0;
+		String strMaritalStatus = "";
+		double dblGrossEarnings = 0;
+		double dblFICATax = 0;
+		double dblSSTax = 0;
+		double dblMedicareTax = 0;
+		double dblFederalTax = 0;
+		double dblNetEarnings = 0;
+		double adblTotalGrossPay[];
+		int intNumberOfEmployees = 0;
+		double dblPayrollTotal = 0;
+		double adblTotalGrossPayOld[];
+		int intIndex = 0;
+	
+		// Initialize arrays
+		adblTotalGrossPay = new double[ 1 ];
+		adblTotalGrossPayOld = new double[ 1 ];
+		
+		
+		while( strResponse != "QUIT ")
+		{
+			// Get inputs
+			// Name
+			System.out.print( "Enter name of employee or QUIT to end program: " );
+			strResponse = ReadStringFromUser();
+			if( strResponse.toUpperCase().equals("QUIT") )
+			{
+				break;
+			}
+			strName = strResponse;
+			
+			// Hourly Wage
+			do
+			{
+				System.out.print( "Enter hourly wage or QUIT to end program: " );
+				strResponse = ReadStringFromUser();
+			} while( IsDouble(strResponse) == false && !strResponse.toUpperCase().contentEquals("QUIT") );
+			// Check for quit
+			if( strResponse.toUpperCase().equals("QUIT") )
+			{
+				break;
+			}
+			// Value entered is numeric and is not quit -> continue
+			dblHourlyWage = Double.parseDouble( strResponse );
+			
+			// Hours Worked
+			do
+			{
+				System.out.print( "Enter number of hours worked or QUIT to end program: " );
+				strResponse = ReadStringFromUser();
+			} while( IsDouble(strResponse) == false && !strResponse.toUpperCase().contentEquals("QUIT") );
+			// Check for quit
+			if( strResponse.toUpperCase().equals("QUIT") )
+			{
+				break;
+			}
+			// Value entered is numeric and is not quit -> continue
+			dblHoursWorked = Double.parseDouble( strResponse );
+			
+			// Withholding Exemptions
+			do
+			{
+				System.out.print( "Enter number of withholding exemptions, 0 if none, maximum 10, or QUIT to end program: " );
+				strResponse = ReadStringFromUser();
+			} while( IsInteger(strResponse) == false && !strResponse.toUpperCase().contentEquals("QUIT") );
+			// Check for quit
+			if( strResponse.toUpperCase().equals("QUIT") )
+			{
+				break;
+			}
+			// Value entered is numeric and is not quit -> continue
+			intExemptions = Integer.parseInt(strResponse);
+			
+			// Marital Status
+			do
+			{
+				System.out.print( "Marital Status: Enter 'S' for Single, 'M' for Married, or QUIT to end program: " );
+				strResponse = ReadStringFromUser().toUpperCase();
+				strMaritalStatus = strResponse;
+			} while( !strResponse.equals("S")  && !strResponse.equals( "M" ) && !strResponse.equals( "QUIT" ));
+			// Check for quit
+			if( strResponse.equals("QUIT") )
+			{
+				break;
+			}
+			// Calculate outputs
+			dblGrossEarnings = CalcGrossEarnings( dblHourlyWage, dblHoursWorked );
+			
+			// Add gross pay to array
+			// Check if this is the first employee
+			if( intNumberOfEmployees == 0 )
+			{
+				adblTotalGrossPay[0] = dblGrossEarnings;
+				intNumberOfEmployees += 1;
+			}
+			else
+			{
+				adblTotalGrossPayOld = new double[ adblTotalGrossPay.length ];
+				
+				// Loop through to copy current array into old array variable
+				for( intIndex = 0; intIndex < intNumberOfEmployees; intIndex += 1 )
+				{
+					adblTotalGrossPayOld[ intIndex ] = adblTotalGrossPay[ intIndex ];
+				}
+				
+				intNumberOfEmployees += 1;
+				adblTotalGrossPay = new double[ intNumberOfEmployees ];
+				
+				// Loop through to move elements of old array into current array
+				for( intIndex = 0; intIndex < adblTotalGrossPayOld.length; intIndex += 1 )
+				{
+					adblTotalGrossPay[ intIndex ] = adblTotalGrossPayOld[ intIndex ];
+				}
+				
+				// Newest employee record
+				adblTotalGrossPay[ adblTotalGrossPay.length - 1 ] = dblGrossEarnings; 
+				
+			}
+			
+			// Calculate taxes and net earnings
+			dblSSTax = CalcSSTax( dblGrossEarnings );
+			dblMedicareTax = CalcMedicareTax( dblGrossEarnings );
+			dblFICATax = CalcFICATax( dblSSTax, dblMedicareTax );
+			dblFederalTax = CalcFedTax( dblGrossEarnings, intExemptions, strMaritalStatus );
+			dblNetEarnings = CalcNetEarnings( dblGrossEarnings, dblFICATax, dblFederalTax );
+			
+			// Display outputs for employee
+			DisplayOutputs( strName, dblGrossEarnings, dblFICATax, dblSSTax, dblMedicareTax, dblFederalTax, dblNetEarnings );
+			
+		}
+		
+		// QUIT was entered
+		
+		// Calculate payroll grand total
+		dblPayrollTotal = CalculatePayrollTotal( adblTotalGrossPay );
+		
+		// Display payroll grand total
+		System.out.printf( "Payroll grand total: %.2f", dblPayrollTotal );
+		
+	}
+
+
+	/**
+	 * Method: ReadStringFromUser - get input from user
+	 * @return strBuffer
+	 */
+	public static String ReadStringFromUser( )
+	{
+
+		String strBuffer = "";
+
+		try
+		{
+			// Input stream
+			BufferedReader burInput = new BufferedReader( new InputStreamReader( System.in ) ) ;
+
+			// Read a line from the user
+			strBuffer = burInput.readLine( );
+		}
+		catch( Exception excError )
+		{
+			System.out.println( excError.toString( ) );
+		}
+		
+
+		// Return string
+		return strBuffer;
+	}
+	
+	/**
+	 * Method: IsDouble- checks if string is a double
+	 * @param strResponse
+	 * String to check
+	 * @return blnNumeric
+	 */
+	public static boolean IsDouble(String strResponse) {
+		boolean blnNumeric = true;
+		
+		try
+		{
+			Double.parseDouble(strResponse);
+		}
+		catch( NumberFormatException e )
+		{
+			blnNumeric = false;
+		}
+		
+		return blnNumeric;
+	}
+	
+	
+	/**
+	 * Method: IsInteger- checks if string is an integer
+	 * @param strResponse
+	 * String to check
+	 * @return blnNumeric
+	 */
+	public static boolean IsInteger(String strResponse) {
+		boolean blnNumeric = true;
+		
+		try
+		{
+			Integer.parseInt(strResponse);
+		}
+		catch( NumberFormatException e )
+		{
+			blnNumeric = false;
+		}
+		
+		return blnNumeric;
+	}
+	
+	
+	/**
+	 * Method: CalcGrossEarnings - calculates gross earnings
+	 * @param dblHourlyWage
+	 * Hourly wage
+	 * @param dblHoursWorked
+	 * Hours worked
+	 * @return dblGrossEarnings
+	 */
+	public static double CalcGrossEarnings(double dblHourlyWage, double dblHoursWorked) {
+		// Declare variables
+		double dblGrossEarnings = 0;
+		
+		// Calculate regular hours
+		if (dblHoursWorked <= 40)			{
+			
+			dblGrossEarnings = dblHourlyWage * dblHoursWorked;
+		}
+		// Calculate regular hours + overtime hours
+		else  {
+			dblGrossEarnings = (dblHourlyWage * 40) + ((dblHoursWorked-40) * (dblHourlyWage *1.5));
+		}
+		return dblGrossEarnings;
+	}
+	
+	
+	/**
+	 * Method: CalcSSTax - calculates Social Security tax
+	 * @param dblGrossEarnings
+	 * Gross earnings
+	 * @return dblSSTax
+	 */
+	public static double CalcSSTax(double dblGrossEarnings) {
+		// Declare variables
+		double dblSSTax = 0;
+		
+		// Calculate
+		dblSSTax = dblGrossEarnings * 0.062;
+		
+		return dblSSTax;
+	}
+	
+	
+	/**
+	 * Method: CalcMedicareTax - calculates Medicare tax
+	 * @param dblGrossEarnings
+	 * Gross earnings
+	 * @return dblMedicareTax
+	 */
+	public static double CalcMedicareTax(double dblGrossEarnings) {
+		// Declare variables
+		double dblMedicareTax = 0;
+		
+		// Calculate
+		dblMedicareTax = dblGrossEarnings * 0.0145;
+		
+		return dblMedicareTax;
+	}
+	
+	
+	/**
+	 * Method: CalcFICATax - calculates FICA tax
+	 * @param dblSSTax
+	 * Social Security tax
+	 * @param dblMedicareTax
+	 * Medicare tax
+	 * @return dblFICATax
+	 */
+	public static double CalcFICATax(double dblSSTax, double dblMedicareTax) {
+		// Declare variables
+		double dblFICATax = 0;
+
+		// Calculate
+		dblFICATax = dblSSTax + dblMedicareTax;
+		
+		return dblFICATax;
+	}
+	
+	
+	/**
+	 * Method: CalcFedTax - calculates federal tax after adjusted gross income
+	 * @param dblGrossEarnings
+	 * Gross earnings
+	 * @param intExemptions
+	 * Number of withholding exemptions
+	 * @param strMaritalStatus
+	 * Marital status (S or M)
+	 * @return dblFederalTax
+	 */
+	public static double CalcFedTax(double dblGrossEarnings, int intExemptions, String strMaritalStatus) {
+		// Declare variables
+		double dblFederalTax = 0;
+		double dblAdjustedIncome = 0;
+		
+		// Calculate adjusted gross income
+		dblAdjustedIncome = dblGrossEarnings - ( intExemptions * 55.77 );
+		
+		// Determine federal tax 
+		if( dblAdjustedIncome <= 50 )
+		{
+			dblFederalTax = 0;
+		}
+		else if( dblAdjustedIncome <= 500 )
+		{
+			if( strMaritalStatus.equals("S") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 51 ) * 0.10;
+			}
+			else if( strMaritalStatus.equals("M") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 51 ) * 0.05;
+			}
+		}
+		else if( dblAdjustedIncome <= 2500 )
+		{	
+			if( strMaritalStatus.equals("S") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 500 ) * 0.15 + 45.00;
+			}
+			else if( strMaritalStatus.equals("M") )
+			{	
+				dblFederalTax = ( dblAdjustedIncome - 500 ) * 0.10 + 22.50;
+			}
+		}
+		else if( dblAdjustedIncome <= 5000 )
+		{
+			if( strMaritalStatus.equals("S") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 2500 ) * 0.20 + 345.00;
+			}
+			else if( strMaritalStatus.equals("M") )
+			{	
+				dblFederalTax = ( dblAdjustedIncome - 2500 ) * 0.15 + 225.50;
+			}
+		}
+		else if( dblAdjustedIncome > 5000 )
+		{
+			if( strMaritalStatus.equals("S") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 5000 ) * 0.25 + 845.00;
+			}
+			else if( strMaritalStatus.equals("M") )
+			{
+				dblFederalTax = ( dblAdjustedIncome - 5000 ) * 0.20 + 600.50;
+			}
+		}
+	
+		return dblFederalTax;
+	}
+	
+	
+	/**
+	 * Method: CalcNetEarnings - calculates net earnings
+	 * @param dblGrossEarnings
+	 * Gross Earnings
+	 * @param dblFICATax
+	 * FICA Tax
+	 * @param dblFederalTax
+	 * Federal Income Tax Withheld
+	 * @return dblNetEarnings
+	 */
+	public static double CalcNetEarnings(double dblGrossEarnings, double dblFICATax, double dblFederalTax) {
+		// Declare variables
+		double dblNetEarnings = 0;
+		
+		// Calculate
+		dblNetEarnings = dblGrossEarnings - dblFICATax - dblFederalTax;
+		
+		return dblNetEarnings;
+	}
+	
+	
+	/**
+	 * 
+	 * @param strName
+	 * Employee name
+	 * @param dblGrossEarnings
+	 * Gross Earnings
+	 * @param dblFICATax
+	 * FICA Tax = Social Security + Medicare
+	 * @param dblSSTax
+	 * Social Security Tax
+	 * @param dblMedicareTax
+	 * Medicare Tax
+	 * @param dblFederalTax
+	 * Federal Income Tax Withheld
+	 * @param dblNetEarnings
+	 * Net Earnings after taxes
+	 */
+	public static void DisplayOutputs(String strName, double dblGrossEarnings, double dblFICATax, double dblSSTax,
+			double dblMedicareTax, double dblFederalTax, double dblNetEarnings) {
+		// Display outputs
+		System.out.print( "\n" );
+		System.out.println( "----Results for: " + strName + "----\n" );
+		System.out.printf( "Gross Earnings: %.2f\n", dblGrossEarnings);
+		System.out.printf( "FICA Tax: %.2f\n", dblFICATax );
+		System.out.printf( "\tSocial Security Tax: %.2f\n", dblSSTax );
+		System.out.printf( "\tMedicare Tax: %.2f\n", dblMedicareTax );
+		System.out.printf( "Federal Income Tax Withheld: %.2f\n", dblFederalTax );
+		System.out.printf( "Net Earnings: %.2f\n", dblNetEarnings );
+		System.out.print( "\n\n" );
+	}
+	
+	
+	/**
+	 * Method: CalculatePayrollTotal - calculates payroll grand total
+	 * @param adblTotalGrossPay
+	 * Array of employee gross pay values
+	 * @return dblPayrollTotal
+	 */
+	public static double CalculatePayrollTotal(double[] adblTotalGrossPay) {
+		// Declare variables
+		double dblPayrollTotal = 0;
+		int intIndex = 0;
+		
+		for( intIndex = 0; intIndex < adblTotalGrossPay.length; intIndex += 1 )
+		{
+			dblPayrollTotal += adblTotalGrossPay[ intIndex ];
+		}
+		
+		return dblPayrollTotal;
+	}
+	
+}
